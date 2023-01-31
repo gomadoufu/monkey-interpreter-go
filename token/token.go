@@ -4,6 +4,7 @@ package token
 
 type TokenType string
 
+// NOTE:ファイル名や行番号を付与するアイデアもある(Rustではやってみる)
 type Token struct {
 	Type    TokenType
 	Literal string
