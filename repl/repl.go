@@ -10,6 +10,7 @@ import (
 
 const PROMPT = ">> "
 
+// NOTE: Rustでは:qでquitする機能つけたいね
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
