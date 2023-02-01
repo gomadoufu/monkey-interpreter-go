@@ -1,32 +1,12 @@
-// token/token.go
-
 package token
 
 type TokenType string
 
 // NOTE:ファイル名や行番号を付与するアイデアもある(Rustではやってみる)
-type Token struct {
-	Type    TokenType
-	Literal string
-}
-
-var keywords = map[string]TokenType{
-	"fn":  FUNCTION,
-	"let": LET,
-}
-
-func LookupIdent(ident string) TokenType {
-	if tok, ok := keywords[ident]; ok {
-		return tok
-	}
-	return IDENT
-}
 
 const (
-	//トークンや文字が未知であるとき使う
 	ILLEGAL = "ILLEGAL"
-	//ファイル終端
-	EOF = "EOF"
+	EOF     = "EOF"
 
 	// Identifiers + literals
 	IDENT = "IDENT" // add, foobar, x, y, ...
@@ -58,4 +38,31 @@ const (
 	// Keywords
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
+	TRUE     = "TRUE"
+	FALSE    = "FALSE"
+	IF       = "IF"
+	ELSE     = "ELSE"
+	RETURN   = "RETURN"
 )
+
+type Token struct {
+	Type    TokenType
+	Literal string
+}
+
+var keywords = map[string]TokenType{
+	"fn":     FUNCTION,
+	"let":    LET,
+	"true":   TRUE,
+	"false":  FALSE,
+	"if":     IF,
+	"else":   ELSE,
+	"return": RETURN,
+}
+
+func LookupIdent(ident string) TokenType {
+	if tok, ok := keywords[ident]; ok {
+		return tok
+	}
+	return IDENT
+}
