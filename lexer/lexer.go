@@ -4,9 +4,9 @@ import "gomadoufu/monkey-interpreter-go/token"
 
 type Lexer struct {
 	input        string
-	position     int
-	readPosition int
-	ch           byte
+	position     int  // 入力における現在の位置(現在の文字を指し示す)
+	readPosition int  // これから読み込む位置(現在の文字の次)
+	ch           byte // 現在の検査中の文字
 }
 
 func New(input string) *Lexer {
@@ -15,6 +15,21 @@ func New(input string) *Lexer {
 	return l
 }
 
+// 1文字読み込んで、chにセットする
+// NOTE: ASCIIのみに対応し、UTF-8の複数バイト文字には対応できていない。(Rustではやってみる)
+func (l *Lexer) readChar() {
+	//入力が終端に達したかのチェック
+	if l.readPosition >= len(l.input) {
+		l.ch = 0
+	} else {
+		// chに次の文字をセットする
+		l.ch = l.input[l.readPosition]
+	}
+	l.position = l.readPosition
+	l.readPosition += 1
+}
+
+// chを見て、readCharを呼び、対応するトークンを返す
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -84,31 +99,12 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
-		l.readChar()
-	}
+// Token構造体を構築するヘルパー
+func newToken(tokenType token.TokenType, ch byte) token.Token {
+	return token.Token{Type: tokenType, Literal: string(ch)}
 }
 
-// NOTE: ASCIIのみに対応し、UTF-8の複数バイト文字には対応できていない。(Rustではやってみる)
-func (l *Lexer) readChar() {
-	if l.readPosition >= len(l.input) {
-		l.ch = 0 //まだ何も読み込んでいない OR EOF
-	} else {
-		l.ch = l.input[l.readPosition]
-	}
-	l.position = l.readPosition
-	l.readPosition += 1
-}
-
-func (l *Lexer) peekChar() byte {
-	if l.readPosition >= len(l.input) {
-		return 0
-	} else {
-		return l.input[l.readPosition]
-	}
-}
-
+// 識別子を読み込む
 func (l *Lexer) readIdentifier() string {
 	position := l.position
 	for isLetter(l.ch) {
@@ -116,6 +112,20 @@ func (l *Lexer) readIdentifier() string {
 	}
 	return l.input[position:l.position]
 }
+
+// 英字かどうか判定する
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+// 空白文字を読み飛ばす
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
+// 数字を読み込む
 func (l *Lexer) readNumber() string {
 	position := l.position
 	for isDigit(l.ch) {
@@ -124,15 +134,17 @@ func (l *Lexer) readNumber() string {
 	return l.input[position:l.position]
 }
 
-func isLetter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
-}
-
-// NOTE: Monkey言語では浮動小数点数をサポートしていない(Rustでは追加してみる)
+// 数字かどうか判定する
+// NOTE: Monkey言語では整数値以外の数値をサポートしていない(Rustでは追加してみる)
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
 
-func newToken(tokenType token.TokenType, ch byte) token.Token {
-	return token.Token{Type: tokenType, Literal: string(ch)}
+// 1文字先に覗き見る(==や!=など、2文字で構成されるトークンを判定するために必要)
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
+	}
 }
