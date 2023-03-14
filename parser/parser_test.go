@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// let文のテスト
 func TestLetStatements(t *testing.T) {
 	input := `
 	let x = 5;
@@ -42,6 +43,7 @@ func TestLetStatements(t *testing.T) {
 	}
 }
 
+// テスト用のヘルパー関数
 func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 	if s.TokenLiteral() != "let" {
 		t.Errorf("s.TokenLiteral not 'let'. got=%q", s.TokenLiteral())
@@ -67,6 +69,7 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 	return true
 }
 
+// 文法エラーがあったらテストを失敗させる
 func checkParserErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
@@ -80,6 +83,7 @@ func checkParserErrors(t *testing.T, p *Parser) {
 	t.FailNow()
 }
 
+// return文のテスト
 func TestReturnStatements(t *testing.T) {
 	input := `
 	return 5;
@@ -109,7 +113,7 @@ func TestReturnStatements(t *testing.T) {
 	}
 }
 
-// Pratt構文解析器のためのテスト
+// 式文のテスト(識別子のみの式文)
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 
@@ -142,6 +146,7 @@ func TestIdentifierExpression(t *testing.T) {
 	}
 }
 
+// 式文のテスト(整数リテラルのみの式文)
 func TestIntegerLiteralExpression(t *testing.T) {
 	input := "5;"
 
@@ -174,6 +179,8 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	}
 }
 
+// 前置演算子のテスト
+// テーブル駆動テスト
 func TestParsingPrefixExpressions(t *testing.T) {
 	prefixTests := []struct {
 		input        string
@@ -215,6 +222,8 @@ func TestParsingPrefixExpressions(t *testing.T) {
 	}
 }
 
+// TestParsingPrefixExpressionsのヘルパー関数
+// *ast.PrefixExpressionの右の値が正しい整数リテラルかどうかを判定する
 func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
 	integ, ok := il.(*ast.IntegerLiteral)
 	if !ok {
@@ -235,6 +244,7 @@ func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
 	return true
 }
 
+// 中置演算子のテスト
 func TestParsingInfixExpressions(t *testing.T) {
 	infixTests := []struct {
 		input      string

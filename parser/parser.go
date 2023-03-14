@@ -8,15 +8,16 @@ import (
 	"strconv"
 )
 
+// 優先順位
 const (
-	_ int = iota
-	LOWEST
-	EQUALS      // ==
-	LESSGREATER // > or <
-	SUM         // +
-	PRODUCT     // *
-	PREFIX      // -X or !X
-	CALL        // myFunction(X)
+	_           int = iota
+	LOWEST          //最も低い優先順位
+	EQUALS          // ==
+	LESSGREATER     // > or <
+	SUM             // +
+	PRODUCT         // *
+	PREFIX          // -X or !X
+	CALL            // myFunction(X)
 )
 
 // 演算子優先順位テーブル
@@ -33,12 +34,16 @@ var precedences = map[token.TokenType]int{
 }
 
 type Parser struct {
+	// 字句解析機へのポインタ
 	l      *lexer.Lexer
 	errors []string
 
-	curToken  token.Token
+	// 現在調べているトークン
+	curToken token.Token
+	// curTokenだけで判断がつかない時に見る、curTokenの次のトークン
 	peekToken token.Token
 
+	// curToken.Typeに関連づけられた構文解析関数を検索するためのマップ
 	prefixParseFns map[token.TokenType]prefixParseFn
 	infixParseFns  map[token.TokenType]infixParseFn
 }
@@ -46,6 +51,8 @@ type Parser struct {
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l, errors: []string{}}
 
+	// Parserにある2つのマップを初期化し、それぞれのトークンに対応する構文解析関数を登録する
+	// すべての構文解析関数は、関連づけられたトークンがcurTokenにセットされている状態で動作を開始する。そして、この関数の処理対象である式の一番最後のトークンがcurTokenにセットされた状態になるまで進んで終了する。
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
@@ -62,55 +69,23 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
 
-	//２つトークンを読み込む。curtokenとpeekTokenの両方がセットされる
+	//２つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
 	p.nextToken()
 
 	return p
 }
 
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-}
-
-func (p *Parser) parseIntegerLiteral() ast.Expression {
-	lit := &ast.IntegerLiteral{Token: p.curToken}
-
-	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
-	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-
-	lit.Value = value
-	return lit
-}
-
-func (p *Parser) parsePrefixExpression() ast.Expression {
-	expression := &ast.PrefixExpression{
-		Token:    p.curToken,
-		Operator: p.curToken.Literal,
-	}
-
-	p.nextToken()
-
-	expression.Right = p.parseExpression(PREFIX)
-
-	return expression
-}
-
-func (p *Parser) nextToken() {
-	p.curToken = p.peekToken
-	p.peekToken = p.l.NextToken()
-}
-
 func (p *Parser) ParseProgram() *ast.Program {
+	// ASTのルートノードを生成
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
+	// EOFに達するまで、入力のトークンを繰り返し読む
 	for p.curToken.Type != token.EOF {
+		// 文を構文解析する
 		stmt := p.parseStatement()
+		// 文がnilでなければ、Statementsに追加する
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
 		}
@@ -119,26 +94,40 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// curTokenとpeekTokenを進めるヘルパーメソッド
+func (p *Parser) nextToken() {
+	p.curToken = p.peekToken
+	p.peekToken = p.l.NextToken()
+}
+
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
+	// もし現在のトークンがLETなら、LetStatementを構文解析する
 	case token.LET:
 		return p.parseLetStatement()
+	// もし現在のトークンがRETURNなら、ReturnStatementを構文解析する
 	case token.RETURN:
 		return p.parseReturnStatement()
+	// それ以外なら、式文を構文解析する
 	default:
 		return p.parseExpressionStatement()
 	}
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
+	// LETトークンに基づいた、LetStatement ASTノードを構築
 	stmt := &ast.LetStatement{Token: p.curToken}
 
+	// 文法チェックをしつつ進める
+	// 識別子(変数名)を期待する
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
 
+	// 識別子ノードを構築
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
+	// 等号を期待する
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
 	}
@@ -159,11 +148,13 @@ func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
+// 文法チェック用のアサーション関数
 func (p *Parser) expectPeek(t token.TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
 		return true
 	} else {
+		// 不正な入力ならエラー
 		p.peekError(t)
 		return false
 	}
@@ -173,12 +164,15 @@ func (p *Parser) Errors() []string {
 	return p.errors
 }
 
+// expectPeek関数で期待した値が現れなかった時に呼ばれる
+// エラーメッセージをerrorsに追加することで、親オブジェクトにエラーを伝搬する
 func (p *Parser) peekError(t token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	// RETURNトークンに基づいた、ReturnStatement ASTノードを構築
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 
 	p.nextToken()
@@ -196,19 +190,24 @@ type (
 	infixParseFn  func(ast.Expression) ast.Expression // 中置構文解析関数
 )
 
+// 前置演算子用の構文解析関数を登録する
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
 }
 
+// 中置演算子用の構文解析関数を登録する
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	// 式文のトークンに基づいた、ExpressionStatement ASTノードを構築
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
+	// 構文解析関数を呼び出す
 	stmt.Expression = p.parseExpression(LOWEST)
 
+	// 省略可能なセミコロンをチェックする
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -216,19 +215,18 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return stmt
 }
 
-func (p *Parser) noPrefixParseFnError(t token.TokenType) {
-	msg := fmt.Sprintf("no prefix parse function for %s found", t)
-	p.errors = append(p.errors, msg)
-}
-
 func (p *Parser) parseExpression(precedence int) ast.Expression {
+	// p.curToken.Typeの前置に対応する構文解析関数があるか、マップをチェック
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
+		// もしなければ、nilを返す
 		p.noPrefixParseFnError(p.curToken.Type)
 		return nil
 	}
+	// もしあれば、呼び出して、その結果を後に返す
 	leftExp := prefix()
 
+	//次のトークンの左結合力が現在の右結合力よりも高いかを判定する
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
@@ -242,6 +240,57 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	return leftExp
 }
 
+// 構文解析関数。現在のトークンをTokenフィールドに、トークンのリテラル値をValueフィールドに格納する。
+func (p *Parser) parseIdentifier() ast.Expression {
+	// 識別子のトークンに基づいた、Identifier ASTノードを構築して返す
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+// 構文解析関数。ast.IntegerLiteralのValueフィールドに格納するために、p.curToken.Literalの文字列をstrconv.ParseIntでint64に変換する。
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	// 整数リテラルのトークンに基づいた、IntegerLiteral ASTノードを構築
+	lit := &ast.IntegerLiteral{Token: p.curToken}
+
+	// リテラル値をint64に変換
+	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+
+	lit.Value = value
+	return lit
+}
+
+// 見やすいエラーメッセージを出力するためのヘルパーメソッド
+// フォーマットしたエラーメッセージをerrorsフィールドに追加する
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	p.errors = append(p.errors, msg)
+}
+
+// 前置演算子用の構文解析関数。
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	// 前置演算子のトークンに基づいた、PrefixExpression ASTノードを構築
+	expression := &ast.PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+
+	// トークンを消費する
+	// ここで、p.curTokenは前置演算子のトークンになっている
+	p.nextToken()
+	// ここで、p.curTokenは前置演算子の右辺になるトークンになっている
+	// こうすることで、"-5"のような式を正しくパースできる
+
+	expression.Right = p.parseExpression(PREFIX)
+
+	return expression
+}
+
+// p.peekTokenのトークンタイプに対応している優先順位を、テーブルから探して返す
+// もし見つけられなければLOWESTを返す
 func (p *Parser) peekPrecedence() int {
 	if p, ok := precedences[p.peekToken.Type]; ok {
 		return p
@@ -250,6 +299,8 @@ func (p *Parser) peekPrecedence() int {
 	return LOWEST
 }
 
+// p.curTokenのトークンタイプに対応している優先順位を、テーブルから探して返す
+// もし見つけられなければLOWESTを返す
 func (p *Parser) curPrecedence() int {
 	if p, ok := precedences[p.curToken.Type]; ok {
 		return p
@@ -258,15 +309,21 @@ func (p *Parser) curPrecedence() int {
 	return LOWEST
 }
 
+// 中置演算子用の構文解析関数。
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	// 中置演算子のトークンに基づいた、InfixExpression ASTノードを構築
 	expression := &ast.InfixExpression{
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
-		Left:     left,
+		// parsePrefixExpressionと違い、中置演算子の左辺になる式を、left引数に渡す
+		Left: left,
 	}
 
+	// 現在のトークンである、中置演算子そのものの優先順位を保存しておく
 	precedence := p.curPrecedence()
+	// トークンを進める
 	p.nextToken()
+	// parseInfixExpressionを再度呼び出し、ast.InfixExpressionのRightフィールドを埋める
 	expression.Right = p.parseExpression(precedence)
 
 	return expression
