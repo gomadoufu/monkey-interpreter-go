@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"gomadoufu/monkey-interpreter-go/token"
+	"strings"
 )
 
 // ASTノード
@@ -222,6 +223,149 @@ func (oe *InfixExpression) String() string {
 	out.WriteString(oe.Left.String())
 	out.WriteString(" " + oe.Operator + " ")
 	out.WriteString(oe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+// 真偽値
+type Boolean struct {
+	// TRUE or FALSE トークン
+	Token token.Token
+	// (Go言語の)真偽値
+	Value bool
+}
+
+// Expressionインターフェイスを満たす
+func (b *Boolean) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (b *Boolean) String() string { return b.Token.Literal }
+
+// if式
+type IfExpression struct {
+	// 'if' トークン
+	Token token.Token
+	// ifの後に続く条件式
+	Condition Expression
+	// ifの後に続く条件式の後に続くブロック
+	Consequence *BlockStatement
+	// elseの後に続く条件式の後に続くブロック
+	Alternative *BlockStatement
+}
+
+// Expressionインターフェイスを満たす
+func (ie *IfExpression) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (ie *IfExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("if")
+	out.WriteString(ie.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Consequence.String())
+
+	if ie.Alternative != nil {
+		out.WriteString("else ")
+		out.WriteString(ie.Alternative.String())
+	}
+
+	return out.String()
+}
+
+type BlockStatement struct {
+	// '{' トークン
+	Token token.Token
+	// ブロック内の文
+	Statements []Statement
+}
+
+// Statementインターフェイスを満たす
+func (bs *BlockStatement) statementNode() {}
+
+// Nodeインターフェイスを満たす
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}
+
+// 関数リテラル
+type FunctionLiteral struct {
+	// 'fn' トークン
+	Token token.Token
+	// 引数リスト
+	Parameters []*Identifier
+	// 関数の本体
+	Body *BlockStatement
+}
+
+// Expressionインターフェイスを満たす
+func (fl *FunctionLiteral) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+
+	params := []string{}
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(")")
+	out.WriteString(fl.Body.String())
+
+	return out.String()
+}
+
+// 関数呼び出し
+type CallExpression struct {
+	// '(' トークン
+	Token token.Token
+	// 関数名
+	Function Expression
+	// 引数リスト
+	Arguments []Expression
+}
+
+// Expressionインターフェイスを満たす
+func (ce *CallExpression) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (ce *CallExpression) String() string {
+	var out bytes.Buffer
+
+	args := []string{}
+	for _, a := range ce.Arguments {
+		args = append(args, a.String())
+	}
+
+	out.WriteString(ce.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
 
 	return out.String()
