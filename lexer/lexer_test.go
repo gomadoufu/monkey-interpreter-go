@@ -111,6 +111,8 @@ if (5 < 10) {
 	l := New(input)
 
 	for i, tt := range tests {
+
+		// 繰り返しNextTokenを呼ぶことで、ソースコードを読み進めていく
 		tok := l.NextToken()
 
 		if tok.Type != tt.expectedType {
