@@ -3,7 +3,9 @@ package repl
 import (
 	"bufio"
 	"fmt"
+	"gomadoufu/monkey-interpreter-go/evaluator"
 	"gomadoufu/monkey-interpreter-go/lexer"
+	"gomadoufu/monkey-interpreter-go/object"
 	"gomadoufu/monkey-interpreter-go/parser"
 	"io"
 )
@@ -13,6 +15,7 @@ const PROMPT = ">> "
 // NOTE: Rustでは:qでquitする機能つけたいね
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Printf("%s", PROMPT)
@@ -31,8 +34,11 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+		evaluated := evaluator.Eval(program, env)
+		if evaluated != nil {
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 

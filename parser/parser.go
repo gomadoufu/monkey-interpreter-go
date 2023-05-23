@@ -215,7 +215,7 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
-	defer untrace(trace("parseExpressionStatement"))
+	// defer untrace(trace("parseExpressionStatement"))
 
 	// 式文のトークンに基づいた、ExpressionStatement ASTノードを構築
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
@@ -232,7 +232,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
-	defer untrace(trace("parseExpression"))
+	// defer untrace(trace("parseExpression"))
 	// p.curToken.Typeの前置に対応する構文解析関数があるか、マップをチェック
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
@@ -265,7 +265,7 @@ func (p *Parser) parseIdentifier() ast.Expression {
 
 // 構文解析関数。ast.IntegerLiteralのValueフィールドに格納するために、p.curToken.Literalの文字列をstrconv.ParseIntでint64に変換する。
 func (p *Parser) parseIntegerLiteral() ast.Expression {
-	defer untrace(trace("parseIntegerLiteral"))
+	// defer untrace(trace("parseIntegerLiteral"))
 	// 整数リテラルのトークンに基づいた、IntegerLiteral ASTノードを構築
 	lit := &ast.IntegerLiteral{Token: p.curToken}
 
@@ -290,7 +290,7 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 
 // 前置演算子用の構文解析関数。
 func (p *Parser) parsePrefixExpression() ast.Expression {
-	defer untrace(trace("parsePrefixExpression"))
+	// defer untrace(trace("parsePrefixExpression"))
 	// 前置演算子のトークンに基づいた、PrefixExpression ASTノードを構築
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
@@ -330,7 +330,7 @@ func (p *Parser) curPrecedence() int {
 
 // 中置演算子用の構文解析関数。
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
-	defer untrace(trace("parseInfixExpression"))
+	// defer untrace(trace("parseInfixExpression"))
 	// 中置演算子のトークンに基づいた、InfixExpression ASTノードを構築
 	expression := &ast.InfixExpression{
 		Token:    p.curToken,
@@ -370,7 +370,7 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 
 // if式をパースするための構文解析関数。
 func (p *Parser) parseIfExpression() ast.Expression {
-	defer untrace(trace("parseIfExpression"))
+	// defer untrace(trace("parseIfExpression"))
 	// if式のトークンに基づいた、IfExpression ASTノードを構築
 	expression := &ast.IfExpression{Token: p.curToken}
 
@@ -407,7 +407,7 @@ func (p *Parser) parseIfExpression() ast.Expression {
 // { }で囲まれたブロックをパースするための構文解析関数。
 // parseIfExpressionとparseFunctionLiteralで使われる
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
-	defer untrace(trace("parseBlockStatement"))
+	// defer untrace(trace("parseBlockStatement"))
 	block := &ast.BlockStatement{Token: p.curToken}
 	block.Statements = []ast.Statement{}
 
@@ -426,7 +426,7 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
 // 関数リテラルをパースするための構文解析関数。
 func (p *Parser) parseFunctionLiteral() ast.Expression {
-	defer untrace(trace("parseFunctionLiteral"))
+	// defer untrace(trace("parseFunctionLiteral"))
 	// 関数リテラルのトークンに基づいた、FunctionLiteral ASTノードを構築
 	lit := &ast.FunctionLiteral{Token: p.curToken}
 
@@ -475,7 +475,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 
 // 関数呼び出しをパースするための構文解析関数。
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
-	defer untrace(trace("parseCallExpression"))
+	// defer untrace(trace("parseCallExpression"))
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
 	exp.Arguments = p.parseExpressionList(token.RPAREN)
 	return exp
