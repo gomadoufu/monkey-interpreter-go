@@ -370,3 +370,20 @@ func (ce *CallExpression) String() string {
 
 	return out.String()
 }
+
+// 文字列リテラル
+type StringLiteral struct {
+	// STRINGトークン
+	Token token.Token
+	// 文字列リテラルが表現している実際の文字列
+	Value string
+}
+
+// Expressionインターフェイスを満たす
+func (sl *StringLiteral) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (sl *StringLiteral) String() string { return sl.Token.Literal }

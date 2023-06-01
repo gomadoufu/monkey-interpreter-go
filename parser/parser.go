@@ -79,6 +79,8 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
+	p.registerPrefix(token.STRING, p.parseStringLiteral)
+
 	//２つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
 	p.nextToken()
@@ -504,4 +506,9 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	}
 
 	return args
+}
+
+// 文字列リテラルをパースするための構文解析関数。
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
 }
