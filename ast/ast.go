@@ -387,3 +387,90 @@ func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
 
 // ast.Program.String()に呼ばれる
 func (sl *StringLiteral) String() string { return sl.Token.Literal }
+
+type ArrayLiteral struct {
+	// '[' トークン
+	Token token.Token
+	// 配列の要素
+	Elements []Expression
+}
+
+// Expressionインターフェイスを満たす
+func (al *ArrayLiteral) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+
+func (al *ArrayLiteral) TokenLiteral() string { return al.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (al *ArrayLiteral) String() string {
+	var out bytes.Buffer
+
+	elements := []string{}
+	for _, e := range al.Elements {
+		elements = append(elements, e.String())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+
+	return out.String()
+}
+
+type IndexExpression struct {
+	// '[' トークン
+	Token token.Token
+	// 配列
+	Left Expression
+	// インデックス
+	Index Expression
+}
+
+// Expressionインターフェイスを満たす
+func (ie *IndexExpression) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+func (ie *IndexExpression) TokenLiteral() string { return ie.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (ie *IndexExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString("[")
+	out.WriteString(ie.Index.String())
+	out.WriteString("])")
+
+	return out.String()
+}
+
+type HashLiteral struct {
+	// '{' トークン
+	Token token.Token
+	// ハッシュの要素
+	Pairs map[Expression]Expression
+}
+
+// Expressionインターフェイスを満たす
+func (hl *HashLiteral) expressionNode() {}
+
+// Nodeインターフェイスを満たす
+func (hl *HashLiteral) TokenLiteral() string { return hl.Token.Literal }
+
+// ast.Program.String()に呼ばれる
+func (hl *HashLiteral) String() string {
+	var out bytes.Buffer
+
+	pairs := []string{}
+	for key, value := range hl.Pairs {
+		pairs = append(pairs, key.String()+":"+value.String())
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+
+	return out.String()
+}

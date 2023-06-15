@@ -48,6 +48,10 @@ const (
 	IF       = "IF"
 	ELSE     = "ELSE"
 	RETURN   = "RETURN"
+
+	LBRACKET = "["
+	RBRACKET = "]"
+	COLON    = ":"
 )
 
 // トークン = トークンタイプ + リテラル
