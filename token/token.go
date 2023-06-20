@@ -13,8 +13,9 @@ const (
 	EOF     = "EOF"
 
 	// 識別子 + リテラル
-	IDENT = "IDENT" // add, foobar, x, y, ...
-	INT   = "INT"   // 1343456
+	IDENT  = "IDENT"  // add, foobar, x, y, ...
+	INT    = "INT"    // 1343456
+	STRING = "STRING" // "foobar"
 
 	// 演算子
 	ASSIGN   = "="
@@ -47,6 +48,10 @@ const (
 	IF       = "IF"
 	ELSE     = "ELSE"
 	RETURN   = "RETURN"
+
+	LBRACKET = "["
+	RBRACKET = "]"
+	COLON    = ":"
 )
 
 // トークン = トークンタイプ + リテラル
